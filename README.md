@@ -1,5 +1,5 @@
 
-For vagrant setup, try
+For vagrant demo, try
 https://github.com/contiv/netplugin/tree/master/vagrant/mesos-cni
 
 ####Pre-requisites
@@ -13,7 +13,8 @@ Passwordless ssh to machines
 ###Step 1 Download files
 ```
 mkdir -p some_dir && cd some_dir
-download.sh
+wget https://raw.githubusercontent.com/contiv/demo/master/mesos/download.sh
+./download.sh
 ```
 
 
@@ -29,15 +30,14 @@ follow example file inventory.example
 
 ```
 
-example: bring-up vagrant cluster of 5 nodes & configure mesos/marathon with contiv
+Example: bring-up vagrant cluster of 5 nodes & configure mesos/marathon with contiv
 ```
 # bring up vagrant nodes
 vagrant up
 
 # update passwordless ssh to vagrant nodes
-
 SSHKEY=$(vagrant ssh-config | grep IdentityFile | head -n1 | awk -F' ' '{ print $2 }')
-ssh vagrant@192.168.33.10-14 -i ${SSHKEY}
+ssh vagrant@192.168.33.10---14 -i ${SSHKEY}
 
 # crate inventory
 cp inventory.example inventory
@@ -47,7 +47,7 @@ SSHKEY=$(vagrant ssh-config | grep IdentityFile | head -n1 | awk -F' ' '{ print 
 ./setup.sh -u vagrant  --private-key=${SSHKEY}
 ```
 
-###Step 3 Launch containers
+###Step 4 Launch containers
 
 ```
 use "cni_task.sh" script to launch containers.
@@ -67,11 +67,16 @@ usage: ./cni_task.sh [-m marathon-ipaddr] [-j jobname] [-t tenant-name] [-n netw
 
 ./cni_task.sh 
 ```
-to launch container without using cni_task.sh, create network using netctl cli 
+to launch containers without using cni_task.sh, create network using netctl cli 
 
+```
 $ netctl net create default-net -subnet 10.1.1.0/24
 
-create a json file & update network/tenant
+create a json file & update the following fields with apropriate value
+id : <uniqe id>
+io.contiv.tenant :<name of contiv tenant name>
+io.contiv.network : <name of contiv network name>
+io.contiv.net-group : <name of contiv network group>
 
 {
   "id": "container1",
@@ -91,32 +96,26 @@ create a json file & update network/tenant
     }
   },
   "ipAddress": {
-     "networkName": "contiv",
+     "networkName": "netcontiv",
      "labels": {
          "io.contiv.tenant": <name of contiv tenant name>
          "io.contiv.network": <name of contiv network name>
          "io.contiv.net-group": <name of contiv network group> 
      }
 
-} }
-
-update container id
-update contiv CNI fields 
-
- "labels": {
-     "io.contiv.tenant": <name of contiv tenant name>
-     "io.contiv.network": <name of contiv network name>
-     "io.contiv.net-group": <name of contiv network group> 
  }
+}
+```
 
 
-launch the container by sending json to marathon
+```
+launch the containers by sending json configutaion to marathon
 curl -X POST http://192.168.2.10:8080/v2/apps -d @${JSON_FILE} \
      -H "Content-type: application/json"
-
-###Step 4 Check mesos/marathon
+```
+###Step 5 Check mesos/marathon
  mesos ui master:5050
  marathon ui  master:8080
- * mesos run in HA mode,
+ * mesos runs in HA mode,
  * marathon runs on the first master node
 
